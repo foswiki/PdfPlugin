@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# Build for FormPlugin
+# Build for PdfPlugin
 #
 BEGIN {
     foreach my $pc ( split( /:/, $ENV{FOSWIKI_LIBS} ) ) {
@@ -11,7 +11,7 @@ BEGIN {
 use Foswiki::Contrib::Build;
 
 # Create the build object
-$build = new Foswiki::Contrib::Build('FormPlugin');
+$build = new Foswiki::Contrib::Build('PdfPlugin');
 
 # Build the target on the command line, or the default target
 $build->build( $build->{target} );
