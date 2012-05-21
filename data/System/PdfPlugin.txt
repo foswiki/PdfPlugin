@@ -13,6 +13,15 @@ Some examples of generated PDFs:
    * %ICON{pdf}% [[%ATTACHURL%/apple_com.pdf][apple.com homepage]]
 
 
+---++ Usage
+View the PDF version of a topic by adding =contenttype=application/pdf= to the  url like this:
+<verbatim class="tml">
+%SCRIPTURL{"view"}/%WEB%/%TOPIC%?contenttype=application/pdf
+</verbatim>
+
+Test this: %SCRIPTURL{"view"}%/%WEB%/%TOPIC%?contenttype=application/pdf
+
+
 ---++ Limitations
    * Currently you can only create one page at a time.
    * Additional format parameters are not supported.
@@ -35,31 +44,43 @@ The button label is configurable. Re-define module =pdf:text= in your own skin, 
 
 For more help see %SYSTEMWEB%.SkinTemplates.
 
+
 ---++ Installation instructions
 %$INSTALL_INSTRUCTIONS%
+
 
 ---+++ Installing wkhtmltopdf
 This plugin depends on [[http://code.google.com/p/wkhtmltopdf/][wkhtmltopdf]], a converter from html to pdf using webkit (qtwebkit).
 
 =wkhtmltopdf= is available on Linux, Windows and Mac OSX. See [[https://github.com/blueheadpublishing/bookshop/wiki/Installing-wkhtmltopdf][Installing WKHTMLTOPDF]] for instructions for your platform.
 
+
+---++++ Known issues
+=wkhtmltopdf= version =0.9.1=:
+   * anchors still don't work: acroread throws a security exception
+
+=wkhtmltopdf= version =0.8.3=:
+   * links don't work even local #anchors don't do it; they are only drawn viually; [[http://code.google.com/p/wkhtmltopdf/issues/detail?id=39][bug report]]
+   * the =&lt;base href="... />= html header must occur _before_ any other js or css files in the html source;
+     relative urls before are not resolved correctly (this is a general webkit problem &ndash; not a wkhtmltopdf issue)
+   * there's no way to provide a base url on the command-line if a =&lt;base ...>= tag is missing in the html source
+   * a couple of important css3 features are not implemented yet, e.g. =::after=, =::before=, =leader()=, =target-counter()=, =@page=, =string-set=, =title=, =chapter=, =hyphens=
+
+
 ---+++ Configuration settings
 In Configure you can set these settings:
 
 %TABLE{columnwidths="20%,50%,30%"}%
 | *Setting* | *Explanation* | * Default value* |
-| =displayParams= | Display url parameters to show an optimized page view, for instance the print version of a topic. Multiple parameters can be passed separated by <code>;</code> or <code>&</code>. | =cover=print;viewtemplate=plain= |
 | =wkhtmltopdf= | Location of the =wkhtmltopdf= executable. | =/usr/local/bin/wkhtmltopdf= |
+| =pdfparams= | Parameters passed to <code>wkhtmltopdf</code>. | =-q --enable-plugins --outline --print-media-type= |
 | =Debug= | Writes debugging output to =debug.log=. | =0= |
-
 
 
 <!--
    * Set SHORTDESCRIPTION = <noautolink>%$SHORTDESCRIPTION%</noautolink>
 -->
 
----+++ Test installation
-%SCRIPTURL{"pdf"}%/%WEB%/%TOPIC%
 
 ---++ Plugin Info
 |  Author: | Foswiki:Main/ArthurClemens |
@@ -69,7 +90,8 @@ In Configure you can set these settings:
 |  Version: | %$VERSION% |
 |  Release: | %$RELEASE% |
 | Change History: | |
-|  19 May 2012 | 1.0.0 First release |
+|  21 May 2012 | 1.1.0 Adoption of 'best practice' from !GenPDFWebkitPlugin, using =completePageHandler=. |
+|  19 May 2012 | 1.0.0 First release. |
 |  Dependencies: | %$DEPENDENCIES% |
 |  Home: | http://foswiki.org/Extensions/%TOPIC% |
 |  Support: | http://foswiki.org/Support/%TOPIC% |

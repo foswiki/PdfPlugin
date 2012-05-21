@@ -1,4 +1,3 @@
-bin/pdf 0755
 data/System/PdfPlugin.txt 0644
 lib/Foswiki/Plugins/PdfPlugin.pm 0644
 lib/Foswiki/Plugins/PdfPlugin.pm.tdy 0644

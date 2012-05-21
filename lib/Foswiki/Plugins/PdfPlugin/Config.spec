@@ -1,27 +1,17 @@
 #---+ Extensions
 #---++ PdfPlugin
 
-# **STRING**
-# Display url parameters to show an optimized page view, for instance the print version of a topic. Multiple parameters can be passed separated by <code>;</code> or <code>&</code>.
-$Foswiki::cfg{Plugins}{PdfPlugin}{displayParams} = 'cover=print;viewtemplate=plain';
-
 # **PATH**
-# Location of the <code>wkhtmltopdf</code> executable.
+# Location of the <code>wkhtmltopdf</code> executable, downloadable from <a href='http://code.google.com/p/wkhtmltopdf'>http://code.google.com/p/wkhtmltopdf</a>.
 $Foswiki::cfg{Plugins}{PdfPlugin}{wkhtmltopdf} = '/usr/local/bin/wkhtmltopdf';
+
+# **STRING**
+# Parameters passed to <code>wkhtmltopdf</code>.
+$Foswiki::cfg{Plugins}{PdfPlugin}{pdfparams} = '-q --enable-plugins --outline --print-media-type';
 
 # **BOOLEAN**
 # Enable debugging (debug messages will be written to data/debug.txt)
 $Foswiki::cfg{Plugins}{PdfPlugin}{Debug} = 0;
 
-# **PERL H**
-# This setting is required to enable executing pdf script from the bin directory
-$Foswiki::cfg{SwitchBoard}{pdf} = {
-    package  => 'Foswiki::Plugins::PdfPlugin',
-    function => 'viewPdf',
-    context  => {
-    	view => 1,
-		static => 1
-    }
-};
 
 1;

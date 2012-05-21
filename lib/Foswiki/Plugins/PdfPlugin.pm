@@ -6,18 +6,18 @@ use strict;
 use warnings;
 
 use Foswiki::Func;
-use Foswiki::OopsException ();
 use File::Temp qw( tempfile );
-use Error qw( :try );
-use Data::Dumper;    # for error output
 
-our $VERSION          = '$Rev: 14686 $';
-our $RELEASE          = '1.0.0';
-our $SHORTDESCRIPTION = 'Generate high quality PDF files from topics';
+our $VERSION           = '$Rev: 14686 $';
+our $RELEASE           = '1.1.0';
+our $SHORTDESCRIPTION  = 'Generate high quality PDF files from topics';
 our $NO_PREFS_IN_TOPIC = 1;
-our $PDF_CMD           = $Foswiki::cfg{Plugins}{PdfPlugin}{wkhtmltopdf}
+our $PDF_CMD           = $Foswiki::cfg{Plugins}{PdfPlugin}{pdfCmd}
   || '/usr/local/bin/wkhtmltopdf';
-our $DISPLAY_PARAMS = $Foswiki::cfg{Plugins}{PdfPlugin}{displayParams} || '';
+our $PDF_CMD_RENDER_PARAMS = $Foswiki::cfg{Plugins}{PdfPlugin}{pdfparams}
+  || '-q --enable-plugins --outline --print-media-type';
+our $PDF_CMD_FILE_PARAMS = '%INFILE|F% %OUTFILE|F%';
+
 our $pluginName = 'PdfPlugin';
 
 =pod
@@ -29,224 +29,68 @@ sub initPlugin {
 
     debug("initPlugin");
 
-    # check for Plugins.pm versions
-    if ( $Foswiki::Plugins::VERSION < 1.026 ) {
-        Foswiki::Func::writeWarning(
-            "Version mismatch between $pluginName and Plugins.pm");
+    if ( $Foswiki::Plugins::VERSION < 2.0 ) {
+        Foswiki::Func::writeWarning( 'Version mismatch between ',
+            __PACKAGE__, ' and Plugins.pm' );
         return 0;
     }
-    
+
     # Plugin correctly initialized
     return 1;
 }
 
 =pod
 
+Method (almost verbatim) copied from GenPDFWebkitPlugin.
+Author: Michael Daum
+
 =cut
 
-sub viewPdf {
-    my $session = shift;
+sub completePageHandler {
 
-    debug("viewPdf");
+    #my($html, $httpHeaders) = @_;
 
-    $Foswiki::Plugins::SESSION = $session;
+    my $query = Foswiki::Func::getCgiQuery();
+    my $contenttype = $query->param("contenttype") || 'text/html';
 
-    my $web      = $session->{webName};
-    my $topic    = $session->{topicName};
-    my $response = $session->{response};
+    debug("completePageHandler");
 
-    my $query = Foswiki::Func::getRequestObject();
+    # is this a pdf view?
+    return unless $contenttype eq "application/pdf";
 
-    # Check for existence
-    Foswiki::Func::redirectCgiQuery( $query,
-        Foswiki::Func::getOopsUrl( $web, $topic, "oopsmissing" ) )
-      unless Foswiki::Func::topicExists( $web, $topic );
+    require File::Temp;
+    require Foswiki::Sandbox;
 
-    # check topic existence
-    if ( !Foswiki::Func::topicExists( $web, $topic ) ) {
-        Foswiki::Func::redirectCgiQuery( undef,
-            Foswiki::Func::getScriptUrl( $web, $topic, 'view' ), 1 );
-        return 0;
-    }
+    # remove left-overs
+    $_[0] =~ s/([\t ]?)[ \t]*<\/?(nop|noautolink)\/?>/$1/gis;
 
-    _checkAccessPermissions( $web, $topic );
+    # create temp files
+    my $htmlFile = new File::Temp( PREFIX => $pluginName . 'XXXXXXXXXX', SUFFIX => '.html' );
+    my $pdfFile  = new File::Temp( PREFIX => $pluginName . 'XXXXXXXXXX', SUFFIX => '.pdf' );
 
-    my $displayParams = _displayParams($query);
+    debug("htmlFile=$htmlFile");
+    debug("pdfFile=$pdfFile");
 
-    my $viewUrl =
-      Foswiki::Func::getScriptUrl( $web, $topic, 'view', %{$displayParams} );
-    debug("viewUrl=$viewUrl");
+    # creater html file
+    print $htmlFile "$_[0]";
 
-    # Create a temp file for output
-    my ( $ofh, $outputFile ) = tempfile(
-        $pluginName . 'XXXXXXXXXX',
-        DIR    => _getTempDir(),
-        SUFFIX => '.pdf'
+    # execute
+    my $pdfCmd = "$PDF_CMD $PDF_CMD_RENDER_PARAMS $PDF_CMD_FILE_PARAMS";
+    debug("pdfCmd=$pdfCmd");
+    my ( $output, $exit ) = Foswiki::Sandbox->sysCommand(
+        $pdfCmd,
+        OUTFILE => $pdfFile->filename,
+        INFILE  => $htmlFile->filename,
     );
 
-    debug("outputFile=$outputFile");
+    local $/ = undef;
 
-    my @cmdArgs = ( $viewUrl, $outputFile );    # perhaps later more args
-
-    my $cmdArgs = join( ' ', @cmdArgs );
-    my ( $output, $exit ) =
-      Foswiki::Sandbox->sysCommand( $PDF_CMD . ' ' . $cmdArgs );
-
-    if ( !-e $outputFile ) {
-        die "error running wkhtmltopdf ($PDF_CMD): $output\n";
+    if ($exit) {
+        throw Error::Simple(
+            "$pluginName -- execution of wkhtmltopdf failed ($exit)");
     }
 
-    if ( !-s $outputFile ) {
-        die "wkhtmltopdf produced zero length output ($PDF_CMD): $output\n"
-          . join( ' ', @cmdArgs ) . "\n";
-    }
-
-    # output to screen
-    my $cd = "filename=${web}_$topic.%s";
-
-    try {
-        print CGI::header(
-            -TYPE                => 'application/pdf',
-            -Content_Disposition => sprintf $cd,
-            'pdf'
-        );
-    }
-    catch Error::Simple with {
-        print STDERR "$pluginName caught Error::Simple";
-        my $e = shift;
-        use Data::Dumper;
-        die Dumper($e);
-    };
-
-    open $ofh, $outputFile;
-    binmode $ofh;
-    while (<$ofh>) {
-        print;
-    }
-    close $ofh;
-
-    # Cleaning up temporary files
-    unlink $outputFile;
-
-    # SMELL:  Foswiki 1.0.x adds the headers,  1.1 does not.   However
-    # deleting them doesn't appear to cause problems in 1.1.
-
-    my $headers = $response->headers();
-    $response->deleteHeader( 'X-Foswikiuri', 'X-Foswikiaction' );
-}
-
-=pod
-
-=cut
-
-sub _displayParams {
-    my ($query) = @_;
-
-    # handle revision separately, independent from view params
-    my $rev = $query->param('rev');
-
-    my $urlParamInput = _queryParams($query);
-    _cleanupDisplayParams($urlParamInput);
-    my %displayParams = Foswiki::Func::extractParameters($urlParamInput);
-    delete $displayParams{rev} if defined $rev;
-
-    if ( !keys %displayParams ) {
-        my $defaultParamInput = $DISPLAY_PARAMS;
-        _cleanupDisplayParams($defaultParamInput);
-        %displayParams = Foswiki::Func::extractParameters($defaultParamInput);
-    }
-
-    $displayParams{rev} = $rev if defined $rev;
-
-    while ( my ( $key, $value ) = each %displayParams ) {
-        $displayParams{key} = _urlEncode($value);
-    }
-
-    debug( "_displayParams; returning:" . Dumper( \%displayParams ) );
-
-    return \%displayParams;
-}
-
-sub _cleanupDisplayParams {
-
-    #	my ( $text ) = @_;
-    $_[0] =~ s/(\w+\=\w+)([;&])/$1 /go;
-    $_[0] =~ s/(\w+)\=(\w+)/$1="$2"/go;
-}
-
-sub _urlEncode {
-    my ($text) = @_;
-
-    $text =~ s/([^0-9a-zA-Z-_.:~!*'\/])/'%'.sprintf('%02x',ord($1))/ge;
-
-    return $text;
-}
-
-=pod
-
-=cut
-
-sub _checkAccessPermissions {
-    my ( $web, $topic ) = @_;
-
-    my $userId = Foswiki::Func::getWikiName();
-
-    my $hasAccess =
-      Foswiki::Func::checkAccessPermission( 'VIEW', $userId, undef, $topic,
-        $web );
-
-    if ( !$hasAccess ) {
-        throw Foswiki::OopsException(
-            'accessdenied',
-            def    => 'topic_access',
-            params => [ 'view', 'denied' ]
-        );
-    }
-}
-
-=pod
-
-=cut
-
-sub _getTempDir {
-    my $dir;
-    if ( defined $Foswiki::cfg{TempfileDir} ) {
-        $dir = $Foswiki::cfg{TempfileDir};
-    }
-    else {
-        $dir = File::Spec->tmpdir();
-    }
-    return $dir;
-}
-
-=pod
-
-=cut
-
-sub _queryParams {
-    my ( $request, $params ) = @_;
-    return () unless $request;
-
-    my $format =
-      defined $params->{format}
-      ? $params->{format}
-      : '$name=$value';
-    my $separator = defined $params->{separator} ? $params->{separator} : "\n";
-    my $encoding = $params->{encoding} || 'safe';
-
-    my @list;
-    foreach my $name ( $request->param() ) {
-
-        # Issues multi-valued parameters as separate hiddens
-        my $value = $request->param($name);
-        $value = '' unless defined $value;
-
-        my $entry = $format;
-        $entry =~ s/\$name/$name/g;
-        $entry =~ s/\$value/$value/;
-        push( @list, $entry );
-    }
-    return join( $separator, @list );
+    $_[0] = <$pdfFile>;
 }
 
 =pod

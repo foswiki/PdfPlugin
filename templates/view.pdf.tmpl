@@ -3,20 +3,20 @@
 	top:toolbarbuttons
 		Overridden top button row; PDF button appended at right 
 ---------------------------------------------------
-}%%TMPL:DEF{"top:toolbarbuttons"}%%TMPL:PREV%%TMPL:P{"pdf"}%%TMPL:END%%{
+}%%TMPL:DEF{"top:toolbarbuttons"}%%TMPL:PREV%%TMPL:P{"pdf:link"}%%TMPL:END%%{
 ---------------------------------------------------
 	pdf
 		PDF button
 ---------------------------------------------------
-}%%TMPL:DEF{"pdf"}%<span><a href='%SCRIPTURLPATH{"pdf"}%/%WEB%/%TOPIC%?%REVINFO{"rev=$rev"}%' rel='nofollow'>%TMPL:P{"pdf:text"}%</a></span>%TMPL:END%%{
+}%%TMPL:DEF{"pdf:link"}%<span><a href='%SCRIPTURLPATH{"view"}%/%BASEWEB%/%BASETOPIC%?%QUERYSTRING%;contenttype=application/pdf' rel='nofollow'>%TMPL:P{"pdf:link:text"}%</a></span>%TMPL:END%%{
 ---------------------------------------------------
-	pdf:text
+	pdf:link:text
 		PDF button label
 ---------------------------------------------------
-}%%TMPL:DEF{"pdf:text"}%%MAKETEXT{"PDF"}%%TMPL:END%%{
+}%%TMPL:DEF{"pdf:link:text"}%%MAKETEXT{"PDF"}%%TMPL:END%%{
 ---------------------------------------------------
 	action_printable
 		Overridden print link in topic action links:
 		PDF link appended to print link
 ---------------------------------------------------
-}%%TMPL:DEF{"action_printable"}%%TMPL:P{"printable"}%%TMPL:P{"sep"}%%TMPL:P{"pdf"}%%TMPL:P{"sep"}%%TMPL:END%
+}%%TMPL:DEF{"action_printable"}%%TMPL:P{"printable"}%%TMPL:P{"sep"}%%TMPL:P{"pdf:link"}%%TMPL:P{"sep"}%%TMPL:END%
