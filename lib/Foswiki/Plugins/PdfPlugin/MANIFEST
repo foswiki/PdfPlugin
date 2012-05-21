@@ -1,6 +1,5 @@
 data/System/PdfPlugin.txt 0644
 lib/Foswiki/Plugins/PdfPlugin.pm 0644
-lib/Foswiki/Plugins/PdfPlugin.pm.tdy 0644
 lib/Foswiki/Plugins/PdfPlugin/Config.spec 0644
 pub/System/PdfPlugin/apple_com.pdf 0644
 pub/System/PdfPlugin/examplesites.pdf 0644
