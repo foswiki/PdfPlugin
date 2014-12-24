@@ -3,7 +3,7 @@
 
 # **PATH**
 # Location of the <code>wkhtmltopdf</code> executable, downloadable from <a href='http://code.google.com/p/wkhtmltopdf'>http://code.google.com/p/wkhtmltopdf</a>.
-$Foswiki::cfg{Plugins}{PdfPlugin}{wkhtmltopdf} = '/usr/local/bin/wkhtmltopdf';
+$Foswiki::cfg{Plugins}{PdfPlugin}{pdfCmd} = '/usr/local/bin/wkhtmltopdf';
 
 # **STRING**
 # Parameters passed to <code>wkhtmltopdf</code>.
